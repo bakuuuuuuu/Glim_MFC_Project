@@ -1,0 +1,41 @@
+#include <vector>
+#include <unordered_map>
+#include <algorithm>
+
+using namespace std;
+
+int solution(int a, int b, int c, int d) {
+    unordered_map<int, int> freq;
+    freq[a]++; freq[b]++; freq[c]++; freq[d]++;
+    
+    if (freq.size() == 1) {
+        return 1111 * a;
+    }
+    
+    if (freq.size() == 2) {
+        auto it = freq.begin();
+        int p = it->first, p_count = it->second;
+        int q = next(it)->first, q_count = next(it)->second;
+        
+        if (p_count == 3 || q_count == 3) {
+            int three = (p_count == 3) ? p : q;
+            int one = (p_count == 1) ? p : q;
+            return (10 * three + one) * (10 * three + one);
+        } else {
+            return (p + q) * abs(p - q);
+        }
+    }
+    
+    if (freq.size() == 3) {
+        int q = 0, r = 0;
+        for (auto& pair : freq) {
+            if (pair.second == 1) {
+                if (q == 0) q = pair.first;
+                else r = pair.first;
+            }
+        }
+        return q * r;
+    }
+    
+    return min({a, b, c, d});
+}

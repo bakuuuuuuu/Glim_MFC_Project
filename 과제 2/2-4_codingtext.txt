@@ -1,0 +1,44 @@
+#include <string>
+#include <vector>
+
+using namespace std;
+
+double getSlope(vector<int> dot1, vector<int> dot2) {
+    int x1 = dot1[0];
+    int y1 = dot1[1];
+    int x2 = dot2[0];
+    int y2 = dot2[1];
+
+    double slope = (double)(y2 - y1) / (x2 - x1);
+    return slope;
+}
+
+int solution(vector<vector<int>> dots) {
+    int answer = 0;
+
+    double slope1 = getSlope(dots[0], dots[1]);
+    double slope2 = getSlope(dots[2], dots[3]);
+    
+    if (slope1 == slope2) {
+        answer = 1;
+        return answer;
+    }
+
+    slope1 = getSlope(dots[0], dots[2]);
+    slope2 = getSlope(dots[1], dots[3]);
+    
+    if (slope1 == slope2) {
+        answer = 1;
+        return answer;
+    }
+
+    slope1 = getSlope(dots[0], dots[3]);
+    slope2 = getSlope(dots[1], dots[2]);
+
+    if (slope1 == slope2) {
+        answer = 1;
+        return answer;
+    }
+
+    return answer;
+}

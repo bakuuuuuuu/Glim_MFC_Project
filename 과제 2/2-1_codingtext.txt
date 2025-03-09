@@ -1,0 +1,10 @@
+#include <string>
+#include <vector>
+
+using namespace std;
+
+int solution(int n, int k) {
+    int answer = n / 10;
+    
+    return answer >= k ? n * 12000 : n * 12000 + (k - answer) * 2000;
+}
