@@ -19,15 +19,15 @@ class CAboutDlg : public CDialogEx
 public:
     CAboutDlg();
 
-    // 대화 상자 데이터입니다.
+// 대화 상자 데이터입니다.
 #ifdef AFX_DESIGN_TIME
     enum { IDD = IDD_ABOUTBOX };
 #endif
 
-protected:
+    protected:
     virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 지원입니다.
 
-    // 구현입니다.
+// 구현입니다.
 protected:
     DECLARE_MESSAGE_MAP()
 };
@@ -52,6 +52,7 @@ END_MESSAGE_MAP()
 CGProjectDlg::CGProjectDlg(CWnd* pParent /*=nullptr*/)
     : CDialogEx(IDD_GPROJECT_DIALOG, pParent), m_selectedCircle(-1), m_isDragging(false), m_isRunning(false)
     , m_radius(0)
+    , m_thickness(0)
 {
     m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -63,6 +64,7 @@ void CGProjectDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_STATIC_CIRCLE2, m_staticCircle2);
     DDX_Control(pDX, IDC_STATIC_CIRCLE3, m_staticCircle3);
     DDX_Text(pDX, IDC_EDIT_RADIUS, m_radius);
+    DDX_Text(pDX, IDC_EDIT_THICKNESS, m_thickness);
 }
 
 BEGIN_MESSAGE_MAP(CGProjectDlg, CDialogEx)
@@ -75,6 +77,7 @@ BEGIN_MESSAGE_MAP(CGProjectDlg, CDialogEx)
     ON_BN_CLICKED(IDC_BTN_RESET, &CGProjectDlg::OnResetButtonClick)
     ON_BN_CLICKED(IDC_BTN_RANDOM, &CGProjectDlg::OnRandomMoveButtonClick)
     ON_BN_CLICKED(IDC_BTN_APPLY_RADIUS, &CGProjectDlg::OnApplyRadiusButtonClick)
+    ON_BN_CLICKED(IDC_BTN_APPLY_THICKNESS, &CGProjectDlg::OnApplyThicknessButtonClick)
 END_MESSAGE_MAP()
 
 
@@ -149,46 +152,35 @@ void CGProjectDlg::OnPaint()
     {
         CDialogEx::OnPaint();
 
-        CClientDC dc(this);
+        CClientDC dc(this); // 그리기를 위한 디바이스 컨텍스트입니다.
 
-        // 원 그리기
         for (int i = 0; i < m_circleCount; i++)
         {
             CPoint point = m_circlePoints[i];
-
-            // 반지름을 m_radius로 변경하여 원 그리기
-            CPen pen(PS_SOLID, 2, RGB(0, 0, 0)); // 검은색 실선
-            CBrush brush(RGB(0, 0, 0)); // 검은색 채우기
+            CPen pen(PS_SOLID, 2, RGB(0, 0, 0));
+            CBrush brush(RGB(0, 0, 0));
             CPen* oldPen = dc.SelectObject(&pen);
             CBrush* oldBrush = dc.SelectObject(&brush);
 
-            // 반지름을 m_radius로 설정
             dc.Ellipse(point.x - m_radius, point.y - m_radius, point.x + m_radius, point.y + m_radius);
-
             dc.SelectObject(oldPen);
             dc.SelectObject(oldBrush);
         }
 
-        // 외접원 그리기 코드 (3개 원이 그려졌을 때만)
         if (m_circleCount == 3)
         {
-            // 세 점의 좌표 얻기
             CPoint p1 = m_circlePoints[0];
             CPoint p2 = m_circlePoints[1];
             CPoint p3 = m_circlePoints[2];
 
-            // 외접원의 계산 및 그리기
             double D = 2 * (p1.x * (p2.y - p3.y) + p2.x * (p3.y - p1.y) + p3.x * (p1.y - p2.y));
             double Dx = (p1.x * p1.x + p1.y * p1.y) * (p2.y - p3.y) + (p2.x * p2.x + p2.y * p2.y) * (p3.y - p1.y) + (p3.x * p3.x + p3.y * p3.y) * (p1.y - p2.y);
             double Dy = (p1.x * p1.x + p1.y * p1.y) * (p3.x - p2.x) + (p2.x * p2.x + p2.y * p2.y) * (p1.x - p3.x) + (p3.x * p3.x + p3.y * p3.y) * (p2.x - p1.x);
             double cx = Dx / D;
             double cy = Dy / D;
-
-            // 반지름 계산
             double r = sqrt((p1.x - cx) * (p1.x - cx) + (p1.y - cy) * (p1.y - cy));
 
-            // 외접원 그리기
-            CPen pen(PS_SOLID, 2, RGB(0, 0, 0));
+            CPen pen(PS_SOLID, (int)m_thickness, RGB(0, 0, 0));
             CPen* oldPen = dc.SelectObject(&pen);
             dc.SelectStockObject(NULL_BRUSH);
             dc.Ellipse((int)(cx - r), (int)(cy - r), (int)(cx + r), (int)(cy + r));
@@ -199,48 +191,41 @@ void CGProjectDlg::OnPaint()
 
 void CGProjectDlg::OnResetButtonClick()
 {
-    // 원의 개수와 좌표를 초기화
     m_circleCount = 0;
-    m_circlePoints.RemoveAll(); // CArray의 모든 항목 삭제
-
-    // m_radius 값을 초기값(10)으로 재설정
+    m_circlePoints.RemoveAll();
     m_radius = 10;
 
-    // IDC_EDIT_RADIUS 컨트롤의 텍스트를 비움
     GetDlgItem(IDC_EDIT_RADIUS)->SetWindowTextW(L"0");
 
     UpdateCircleCoordinates();
-    Invalidate(); // 화면을 다시 그려서 원들을 제거
+    Invalidate();
 }
 
 void CGProjectDlg::OnLButtonDown(UINT nFlags, CPoint point)
 {
     CDialogEx::OnLButtonDown(nFlags, point);
 
-    m_selectedCircle = -1; // 초기화
+    m_selectedCircle = -1;
 
-    // 기존 원을 클릭했는지 확인 (드래그 기능)
     for (int i = 0; i < m_circleCount; i++)
     {
         CPoint p = m_circlePoints[i];
         int dx = point.x - p.x;
         int dy = point.y - p.y;
-        if (dx * dx + dy * dy <= m_radius * m_radius) // 반지름 m_radius 안에 있으면 선택
+        if (dx * dx + dy * dy <= m_radius * m_radius)
         {
             m_selectedCircle = i;
             m_isDragging = true;
-            return; // 원이 이미 존재하면 추가하지 않고 종료
+            return;
         }
     }
 
-    // 원이 3개 이상 그려지지 않도록
     if (m_circleCount < 3)
     {
-        // 원의 좌표를 저장하고 반지름을 m_radius로 설정
-        m_circlePoints.Add(point); // 원의 좌표 저장
+        m_circlePoints.Add(point);
         m_circleCount++;
         UpdateCircleCoordinates();
-        Invalidate(); // 화면 다시 그리기
+        Invalidate();
     }
 }
 
@@ -248,9 +233,9 @@ void CGProjectDlg::OnMouseMove(UINT nFlags, CPoint point)
 {
     if (m_isDragging && m_selectedCircle != -1)
     {
-        m_circlePoints[m_selectedCircle] = point; // 원 이동
+        m_circlePoints[m_selectedCircle] = point;
         UpdateCircleCoordinates();
-        Invalidate(); // 화면 갱신
+        Invalidate();
     }
 
     CDialogEx::OnMouseMove(nFlags, point);
@@ -258,8 +243,8 @@ void CGProjectDlg::OnMouseMove(UINT nFlags, CPoint point)
 
 void CGProjectDlg::OnLButtonUp(UINT nFlags, CPoint point)
 {
-    m_isDragging = false; // 드래그 종료
-    m_selectedCircle = -1; // 선택 해제
+    m_isDragging = false;
+    m_selectedCircle = -1;
 
     CDialogEx::OnLButtonUp(nFlags, point);
 }
@@ -303,7 +288,6 @@ void CGProjectDlg::UpdateCircleCoordinates()
 void CGProjectDlg::OnRandomMoveButtonClick()
 {
     if (m_circleCount < 3) return;
-
     if (m_isRunning.load()) return;
 
     m_isRunning.store(true);
@@ -334,15 +318,30 @@ void CGProjectDlg::RandomMoveCircles()
         Invalidate();
         Sleep(500);
     }
-
     m_isRunning.store(false);
 }
 
 void CGProjectDlg::OnApplyRadiusButtonClick()
 {
-    UpdateData(TRUE); // Edit Control의 값을 m_radius 변수에 업데이트
+    UpdateData(TRUE);
+    if (m_radius < 1)
+    {
+        AfxMessageBox(_T("반지름은 1 이상이어야 합니다."));
+        return;
+    }
     UpdateCircleCoordinates();
-    Invalidate();  // 화면을 다시 그려서 원을 갱신
+    Invalidate();
+}
+
+void CGProjectDlg::OnApplyThicknessButtonClick()
+{
+    UpdateData(TRUE);
+    if (m_thickness < 1.0)
+    {
+        AfxMessageBox(L"선 두께는 1 이상이어야 합니다.");
+        return;
+    }
+    Invalidate();
 }
 
 // 사용자가 최소화된 창을 끄는 동안에 커서가 표시되도록 시스템에서

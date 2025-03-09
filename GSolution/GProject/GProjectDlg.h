@@ -48,6 +48,7 @@ protected:
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 	afx_msg void OnRandomMoveButtonClick();
 	afx_msg void OnApplyRadiusButtonClick();
+	afx_msg void OnApplyThicknessButtonClick();
 
 	void UpdateCircleCoordinates();
 	void RandomMoveCircles();
@@ -58,4 +59,5 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	double m_radius;
+	double m_thickness;
 };
